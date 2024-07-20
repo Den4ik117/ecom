@@ -1,23 +1,27 @@
 package user
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Den4ik117/ecom/service/auth"
 	"github.com/Den4ik117/ecom/types"
 	"github.com/Den4ik117/ecom/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"net/http"
 	"time"
 )
 
 type Handler struct {
-	store types.UserStore
+	store   types.UserStore
+	channel *amqp.Channel
 }
 
-func NewHandler(store types.UserStore) *Handler {
+func NewHandler(store types.UserStore, channel *amqp.Channel) *Handler {
 	return &Handler{
-		store: store,
+		store:   store,
+		channel: channel,
 	}
 }
 
@@ -57,6 +61,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest,
 			fmt.Errorf("user with email %s already exists", payload.Email),
 		)
+		return
 	}
 
 	hashedPassword, err := auth.HashPassword(payload.Password)
@@ -74,6 +79,27 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	})
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = h.channel.Publish(
+		"",
+		"ecom",
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		},
+	)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return

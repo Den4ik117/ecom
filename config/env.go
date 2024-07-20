@@ -8,12 +8,16 @@ import (
 )
 
 type Config struct {
-	PublicHost string
-	Port       string
-	DBUser     string
-	DBPassword string
-	DBAddress  string
-	DBName     string
+	PublicHost       string
+	Port             string
+	DBUser           string
+	DBPassword       string
+	DBAddress        string
+	DBName           string
+	RabbitMQHost     string
+	RabbitMQPort     string
+	RabbitMQUser     string
+	RabbitMQPassword string
 }
 
 var Envs = initConfig()
@@ -33,7 +37,11 @@ func initConfig() *Config {
 			getEnv("DB_HOST", "127.0.0.1"),
 			getEnv("DB_PORT", "3306"),
 		),
-		DBName: getEnv("DB_NAME", "app"),
+		DBName:           getEnv("DB_NAME", "app"),
+		RabbitMQHost:     getEnv("RABBITMQ_HOST", "127.0.0.1"),
+		RabbitMQPort:     getEnv("RABBITMQ_PORT", "5672"),
+		RabbitMQUser:     getEnv("RABBITMQ_USER", "guest"),
+		RabbitMQPassword: getEnv("RABBITMQ_PASS", "guest"),
 	}
 }
 

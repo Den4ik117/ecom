@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"log"
 	"net/http"
 )
 
@@ -24,8 +25,11 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
-func WriteError(w http.ResponseWriter, status int, err error) error {
-	return WriteJSON(w, status, map[string]string{
+func WriteError(w http.ResponseWriter, status int, err error) {
+	writeErr := WriteJSON(w, status, map[string]string{
 		"error": err.Error(),
 	})
+	if writeErr != nil {
+		log.Fatalf("Failed to write error response. Error: %s", err)
+	}
 }

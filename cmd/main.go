@@ -1,11 +1,12 @@
 package main
 
 import (
-	"database/sql"
+	"fmt"
 	"github.com/Den4ik117/ecom/cmd/api"
 	"github.com/Den4ik117/ecom/config"
 	"github.com/Den4ik117/ecom/db"
 	"github.com/go-sql-driver/mysql"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 )
 
@@ -21,20 +22,42 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %s", err)
+	} else {
+		log.Println("Successfully connected to database")
 	}
 
-	initStorage(database)
+	rabbitmq, err := amqp.Dial(fmt.Sprintf(
+		"amqp://%s:%s@%s:%s/",
+		config.Envs.RabbitMQUser,
+		config.Envs.RabbitMQPassword,
+		config.Envs.RabbitMQHost,
+		config.Envs.RabbitMQPort,
+	))
+	if err != nil {
+		log.Fatalf("Failed to connect to RabbitMQ: %s", err)
+	}
+	defer rabbitmq.Close()
 
-	server := api.NewApiServer(":8080", database)
+	ch, err := rabbitmq.Channel()
+	if err != nil {
+		log.Fatalf("Failed to open a channel. Error: %s", err)
+	}
+	defer ch.Close()
+
+	_, err = ch.QueueDeclare(
+		"ecom", // name
+		false,  // durable
+		false,  // delete when unused
+		false,  // exclusive
+		false,  // no-wait
+		nil,    // arguments
+	)
+	if err != nil {
+		log.Fatalf("Failed to declare a queue. Error: %s", err)
+	}
+
+	server := api.NewApiServer(":8080", database, ch)
 	if err := server.Run(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func initStorage(db *sql.DB) {
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %s", err)
-	}
-
-	log.Println("Connected to database")
 }

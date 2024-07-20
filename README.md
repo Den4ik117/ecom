@@ -9,6 +9,7 @@ Simple API in Golang
 - Golang
 - MySQL
 - Docker
+- RabbitMQ
 
 ## Requirements
 

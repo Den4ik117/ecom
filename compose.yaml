@@ -11,3 +11,17 @@ services:
       - 3306:3306
     volumes:
       - ./.docker/volumes/mysql:/var/lib/mysql
+
+  rabbitmq:
+    image: rabbitmq:management
+    hostname: rabbitmq
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit disk_free_limit 2147483648
+    volumes:
+      - ./.docker/volumes/rabbitmq:/var/lib/rabbitmq
+    ports:
+      - 15672:15672
+      - 5672:5672
